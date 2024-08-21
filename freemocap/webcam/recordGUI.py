@@ -89,6 +89,7 @@ class SettingsGUI:
         cam_inputs,
         parameter_dictionary,
         rotation_dictionary,
+        exposure_dictionary, 
         sessionID_in,
         task,
         current_path_to_save,
@@ -97,6 +98,7 @@ class SettingsGUI:
         self.cam_inputs = cam_inputs
         self.parameter_dictionary = parameter_dictionary
         self.rotation_dictionary = rotation_dictionary
+        self.exposure_dictionary = exposure_dictionary
         self.sessionID_in = sessionID_in
         self.task = task
         self.currentPath = current_path_to_save
@@ -109,6 +111,7 @@ class SettingsGUI:
 
         # check to see if there are any stored rotations for the cameras chosen
         rotationValues = self.RotationRetrieval(cam_inputs, rotation_dictionary)
+        exposure_values = self.retrive_exposure(cam_inputs, exposure_dictionary)
 
         # create frames to organize rotation inputs, resolution inputs, and parameter inputs
         topFrame = Frame(self.master)
@@ -154,9 +157,9 @@ class SettingsGUI:
                     rotLabelFrame, text=option, value=degree, variable=current_rotation
                 ).pack()
 
-        for cam in zip(self.cam_inputs):
+        for cam, exposure in zip(self.cam_inputs, exposure_values):
             current_exposure = tk.IntVar()
-            current_exposure.set(-6)
+            current_exposure.set(exposure)
             self.exposure_list.append(current_exposure)
             tk.Label(rotLabelFrame, text="Choose exposure for Cam " + str(cam)).pack()
             exposureSpinbox = tk.Spinbox(rotLabelFrame, from_=-20, to=20, increment=1, textvariable=current_exposure)
@@ -274,6 +277,15 @@ class SettingsGUI:
             else:
                 rotationValues.append(0)
         return rotationValues
+    
+    def retrive_exposure(self, cam_inputs, exposure_dictionary):
+        exposureValues = []
+        for cam in cam_inputs:
+            if cam in exposure_dictionary.keys():
+                exposureValues.append(exposure_dictionary[cam])
+            else:
+                exposureValues.append(-7)
+        return exposureValues
         
   
         
@@ -364,11 +376,11 @@ def RunChoiceGUI():
     return cam_inputs,task
 
 
-def RunParametersGUI(sessionID_in, rotation_entry, parameter_entry,current_path_to_save,cam_inputs,task):
+def RunParametersGUI(sessionID_in, rotation_entry, parameter_entry, exposure_entry, current_path_to_save,cam_inputs,task):
     # ---Get all the necessary parameters
     root = tk.Tk()
     recording_settings = SettingsGUI(
-        root, cam_inputs, parameter_entry, rotation_entry, sessionID_in, task, current_path_to_save
+        root, cam_inputs, parameter_entry, rotation_entry, exposure_entry, sessionID_in, task, current_path_to_save
     )
     root.mainloop()
 
