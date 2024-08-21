@@ -109,6 +109,7 @@ def initialize(session, stage, board):
         session.parameterDictionary = paramDict
         session.rotationInputs = rotation_input
         session.basePath = Path(savepath)
+        session.exposure_settings = exposure_input
 
         #create a config yaml and text file for this session
         session.start_session(session.parameterDictionary,session.rotationInputs)

@@ -7,7 +7,7 @@ import platform
 
 class CamRecordingThread(threading.Thread):
     def __init__(
-        self, session, camID, unix_camID, camInput, videoName, rawVidPath, beginTime, parameterDictionary
+        self, session, camID, unix_camID, camInput, videoName, rawVidPath, beginTime, parameterDictionary, exposure_setting
     ):
         threading.Thread.__init__(self)
         self.camID = camID
@@ -18,6 +18,7 @@ class CamRecordingThread(threading.Thread):
         self.beginTime = beginTime
         self.parameterDictionary = parameterDictionary
         self.session = session
+        self.exposure = exposure_setting
 
     def run(self):
         print("Starting " + self.camID)
@@ -30,6 +31,7 @@ class CamRecordingThread(threading.Thread):
             self.rawVidPath,
             self.beginTime,
             self.parameterDictionary,
+            self.exposure
         )
 
     def getStamps(self):
@@ -38,7 +40,7 @@ class CamRecordingThread(threading.Thread):
 
 # the recording function that each threaded camera object runs
 def CamRecording(
-    session, camID, unix_camID, camInput, videoName, rawVidPath, beginTime, parameterDictionary
+    session, camID, unix_camID, camInput, videoName, rawVidPath, beginTime, parameterDictionary, exposure
 ):
     """
     Runs the recording process for each threaded camera instance. Saves a video to the RawVideos folder.
@@ -63,7 +65,6 @@ def CamRecording(
     # if not cam.isOpened():
     #         raise RuntimeError('No camera found at input '+ str(camID))
     # pulling out all the dictionary paramters
-    exposure = parameterDictionary.get("exposure")
     resWidth = parameterDictionary.get("resWidth")
     resHeight = parameterDictionary.get("resHeight")
     framerate = parameterDictionary.get("framerate")

@@ -25,6 +25,7 @@ class Session: #self like "recording self"
         self.cam_inputs = None
         self.parameterDictionary = None
         self.rotationInputs = None
+        self.exposure_settings = None
 
         self.cgroup = None
 
