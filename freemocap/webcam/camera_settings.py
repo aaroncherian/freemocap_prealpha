@@ -62,23 +62,31 @@ def initialize(session, stage, board):
         try:
             rotation_entry = session.preferences["saved"]["rotations"]
             parameter_entry = session.preferences["saved"]["parameters"]
+            # exposure_entry = session.preferences["saved"]["exposures"]
         except:
             print("Could not load saved parameters, using default parameters")
             rotation_entry = session.preferences['default']['rotations']
             parameter_entry = session.preferences['default']['parameters']
-                
+            # exposure_entry = session.preferences['default']['exposures']
+        
+        try:
+            exposure_entry = session.preferences["saved"]["exposures"]
+        except:
+            print("Could not load saved exposure parameters, using default parameters")
+            exposure_entry = {}
 
         try:
             current_path_to_save = session.preferences['saved']['path_to_save']
         except:
             current_path_to_save = session.preferences['default']['path_to_save'] 
-        rotDict, paramDict, session.sessionID,savepath, mediaPipeOverlay = recordGUI.RunParametersGUI(sessionID_in, rotation_entry, parameter_entry, current_path_to_save, cam_inputs, task)
+        rotDict, exposure_dict, paramDict, session.sessionID,savepath, mediaPipeOverlay = recordGUI.RunParametersGUI(sessionID_in, rotation_entry, parameter_entry, exposure_entry, current_path_to_save, cam_inputs, task)
     
     #update the saved parameters in the YAML
         #recordingconfig.rotation_settings['saved'] = rotDict
         #recordingconfig.camera_session.preferences['saved'] = paramDict
         session.preferences['saved']['rotations'] = rotDict
         session.preferences['saved']['parameters'] = paramDict
+        session.preferences['saved']['exposures'] = exposure_dict
         if savepath is not None:
             session.preferences['saved']['path_to_save'] = savepath
 
@@ -89,10 +97,11 @@ def initialize(session, stage, board):
         
     #create a list from the rotation dictionary to be used in running webcams
         rotation_input = list(rotDict.values())
+        exposure_input = list(exposure_dict.values())
 
         if task == "setup":
             # run setup processes, and then check if th user wants to proceed to recording
-            camsetup.RunSetup(cam_inputs, rotation_input, paramDict,mediaPipeOverlay)
+            camsetup.RunSetup(cam_inputs, rotation_input, exposure_input, paramDict,mediaPipeOverlay)
             proceedToRecording, restartSetup, session.sessionID, savepath = recordGUI.RunProceedtoRecordGUI(
                 sessionID_in,current_path_to_save
             )
@@ -108,9 +117,10 @@ def initialize(session, stage, board):
         session.parameterDictionary = paramDict
         session.rotationInputs = rotation_input
         session.basePath = Path(savepath)
+        session.exposure_settings = exposure_dict
 
         #create a config yaml and text file for this session
-        session.start_session(session.parameterDictionary,session.rotationInputs)
+        session.start_session(session.parameterDictionary,session.rotationInputs, session.exposure_settings)
         session.session_settings['recording_parameters']['RotationInputs'] = rotDict
         session.session_settings['recording_parameters']['ParameterDict'] = paramDict
         #configyaml = YAML()

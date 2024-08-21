@@ -151,7 +151,7 @@ def RunMe(sessionID=None,
         console.rule('Starting Video Recordings'.upper(), style="color({})".format(14))
         console.rule(style="color({})".format(14))
 
-        runcams.RecordCams(sesh, sesh.cam_inputs, sesh.parameterDictionary, sesh.rotationInputs)
+        runcams.RecordCams(sesh, sesh.cam_inputs, sesh.parameterDictionary, sesh.rotationInputs, sesh.exposure_settings)
         sesh.save_session()
     else:
         print('Skipping Video Recording')

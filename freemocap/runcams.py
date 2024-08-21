@@ -8,7 +8,7 @@ import numpy as np
 from tkinter import Tk
 
 
-def RecordCams(session,camInputs,parameterDictionary,rotationInputs):
+def RecordCams(session,camInputs,parameterDictionary,rotationInputs, exposure_settings):
     """ 
     Determines the number of cameras, assigns them IDs, and then starts a threaded cam recording process. Accesses the pickle file of timestamps
     saved during recording, makes a dataframe from it and saves it to a CSV file. Updates the session class at the end with numCam variable
@@ -48,6 +48,7 @@ def RecordCams(session,camInputs,parameterDictionary,rotationInputs):
             session.rawVidPath,
             beginTime,
             parameterDictionary,
+            exposure_settings[n]
         )
         camRecordings.start()
 

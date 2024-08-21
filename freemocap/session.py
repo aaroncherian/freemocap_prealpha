@@ -25,6 +25,7 @@ class Session: #self like "recording self"
         self.cam_inputs = None
         self.parameterDictionary = None
         self.rotationInputs = None
+        self.exposure_settings = None
 
         self.cgroup = None
 
@@ -34,7 +35,7 @@ class Session: #self like "recording self"
         self.mediaPipe_imgPathList = None
         self.openPose_imgPathList = None
 
-    def start_session(self,paramDict,rotDict):
+    def start_session(self,paramDict,rotDict, exposureDict):
         """ 
         When starting a session from stage 1, create all the file paths necessary, and create a session dictionary to save settings.
         Calls the create_session_paths and create_session_dictionary function
@@ -57,7 +58,7 @@ class Session: #self like "recording self"
         #create all the session filepaths and settings - create and load them into a dictionary
         self.pathList = self.create_session_paths()
         self.session_settings = self.create_session_dictionary()
-        self.create_session_txt(paramDict,rotDict)
+        self.create_session_txt(paramDict,rotDict, exposureDict)
 
         self.save_session()
 
@@ -117,7 +118,7 @@ class Session: #self like "recording self"
         return session_settings_dictionary
 
 
-    def create_session_txt(self,paramDict,rotDict):
+    def create_session_txt(self,paramDict,rotDict, exposureDict):
         """ 
         Create a text file listing recording parameters
         """    
@@ -126,6 +127,7 @@ class Session: #self like "recording self"
         text.write("Session ID = %s\n" %(self.sessionID))
         text.write("%s = %s\n" %("Parameters", paramDict))
         text.write("%s = %s\n" %("Rotations", rotDict))
+        text.write("%s = %s\n" %("Exposure Settings", exposureDict))
         text.close()
 
     def save_session(self):
@@ -194,7 +196,7 @@ class Session: #self like "recording self"
         if self.session_yaml_path.is_file():
             self.session_settings = self.load_session() #if a yaml exists, load it in (this is the case for a webcam recording, or an external recording that's been processed already)
         else: #if a session yaml doesn't exist, as is the case of an external recording
-            self.start_session({},{})
+            self.start_session({},{}, {})
             #run a check to make sure all the frame numbers are the same 
             a_sync_vid_path = list(self.syncedVidPath.glob('*.mp4'))
             frames_per_cam = {} 

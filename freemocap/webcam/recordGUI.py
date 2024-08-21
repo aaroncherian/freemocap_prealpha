@@ -89,6 +89,7 @@ class SettingsGUI:
         cam_inputs,
         parameter_dictionary,
         rotation_dictionary,
+        exposure_dictionary, 
         sessionID_in,
         task,
         current_path_to_save,
@@ -97,6 +98,7 @@ class SettingsGUI:
         self.cam_inputs = cam_inputs
         self.parameter_dictionary = parameter_dictionary
         self.rotation_dictionary = rotation_dictionary
+        self.exposure_dictionary = exposure_dictionary
         self.sessionID_in = sessionID_in
         self.task = task
         self.currentPath = current_path_to_save
@@ -109,6 +111,7 @@ class SettingsGUI:
 
         # check to see if there are any stored rotations for the cameras chosen
         rotationValues = self.RotationRetrieval(cam_inputs, rotation_dictionary)
+        exposure_values = self.retrive_exposure(cam_inputs, exposure_dictionary)
 
         # create frames to organize rotation inputs, resolution inputs, and parameter inputs
         topFrame = Frame(self.master)
@@ -118,6 +121,8 @@ class SettingsGUI:
             recordingSettingsFrame.pack()
         rotLabelFrame = Frame(self.master)
         rotLabelFrame.pack()
+        exposureLabelFrame = Frame(self.master)
+        exposureLabelFrame.pack()
         resFrame = Frame(self.master)
         resFrame.pack()
         parametersFrame = Frame(self.master)
@@ -139,6 +144,7 @@ class SettingsGUI:
         ]
         # radVar = tk.IntVar() #Radio Button Variable
         self.rotation_list = []
+        self.exposure_list = []
         rotationRadioButton = {}
         # creates radio buttons for each cam and stores the chosen rotation degree in a list
         for cam, rotDegree in zip(self.cam_inputs, rotationValues):
@@ -150,6 +156,15 @@ class SettingsGUI:
                 rotationRadioButton[cam] = tk.Radiobutton(
                     rotLabelFrame, text=option, value=degree, variable=current_rotation
                 ).pack()
+
+        for cam, exposure in zip(self.cam_inputs, exposure_values):
+            current_exposure = tk.IntVar()
+            current_exposure.set(exposure)
+            self.exposure_list.append(current_exposure)
+            tk.Label(rotLabelFrame, text="Choose exposure for Cam " + str(cam)).pack()
+            exposureSpinbox = tk.Spinbox(rotLabelFrame, from_=-20, to=20, increment=1, textvariable=current_exposure)
+            exposureSpinbox.pack()
+
 
         # ---Resolution Height and Resolution Width entry
         widthLabel = Label(resFrame, text="Resolution Width").pack(side="left")
@@ -227,8 +242,10 @@ class SettingsGUI:
         # get the final entries for all parameters
         # get the rotations for each camera and save them as values of a dictionary
         self.rotation_output = {}
+        self.exposure_output = {}
         for count, cam in enumerate(self.cam_inputs):
             self.rotation_output[cam] = self.rotation_list[count].get()
+            self.exposure_output[cam] = self.exposure_list[count].get()
 
         # built a parameter dictionary by .get()-ing the values from each entry
         self.paramDict = {
@@ -260,6 +277,15 @@ class SettingsGUI:
             else:
                 rotationValues.append(0)
         return rotationValues
+    
+    def retrive_exposure(self, cam_inputs, exposure_dictionary):
+        exposureValues = []
+        for cam in cam_inputs:
+            if cam in exposure_dictionary.keys():
+                exposureValues.append(exposure_dictionary[cam])
+            else:
+                exposureValues.append(-7)
+        return exposureValues
         
   
         
@@ -350,11 +376,11 @@ def RunChoiceGUI():
     return cam_inputs,task
 
 
-def RunParametersGUI(sessionID_in, rotation_entry, parameter_entry,current_path_to_save,cam_inputs,task):
+def RunParametersGUI(sessionID_in, rotation_entry, parameter_entry, exposure_entry, current_path_to_save,cam_inputs,task):
     # ---Get all the necessary parameters
     root = tk.Tk()
     recording_settings = SettingsGUI(
-        root, cam_inputs, parameter_entry, rotation_entry, sessionID_in, task, current_path_to_save
+        root, cam_inputs, parameter_entry, rotation_entry, exposure_entry, sessionID_in, task, current_path_to_save
     )
     root.mainloop()
 
@@ -370,7 +396,7 @@ def RunParametersGUI(sessionID_in, rotation_entry, parameter_entry,current_path_
         sessionID = None
         savepath = None
 
-    return recording_settings.rotation_output, paramDict, sessionID,savepath, recording_settings.mediaPipeOverlay
+    return recording_settings.rotation_output, recording_settings.exposure_output, paramDict, sessionID,savepath, recording_settings.mediaPipeOverlay
 
 
 def RunProceedtoRecordGUI(sessionID_in,current_path_to_save):
