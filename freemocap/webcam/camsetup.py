@@ -200,7 +200,7 @@ class MediaPipeVideoSetup(threading.Thread):
 
 
 
-def RunSetup(cam_inputs, rotation_input, paramDict,mediaPipeOverlay):
+def RunSetup(cam_inputs, rotation_input, exposure_input, paramDict,mediaPipeOverlay):
     """
     Start video setup by threading instances of the VideoSetup class
     """
@@ -209,8 +209,8 @@ def RunSetup(cam_inputs, rotation_input, paramDict,mediaPipeOverlay):
 
     ulist = []
 
-    cam_exposure = paramDict.get('exposure')
-    for cam_input, cam_rotation in zip(cam_inputs, rotation_input):
+
+    for cam_input, cam_rotation, cam_exposure in zip(cam_inputs, rotation_input, exposure_input):
         if mediaPipeOverlay == True:
             u = MediaPipeVideoSetup(cam_input, paramDict, cam_rotation, cam_exposure)
         else:

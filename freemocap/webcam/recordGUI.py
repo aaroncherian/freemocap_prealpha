@@ -239,8 +239,10 @@ class SettingsGUI:
         # get the final entries for all parameters
         # get the rotations for each camera and save them as values of a dictionary
         self.rotation_output = {}
+        self.exposure_output = {}
         for count, cam in enumerate(self.cam_inputs):
             self.rotation_output[cam] = self.rotation_list[count].get()
+            self.exposure_output[cam] = self.exposure_list[count].get()
 
         # built a parameter dictionary by .get()-ing the values from each entry
         self.paramDict = {
@@ -382,7 +384,7 @@ def RunParametersGUI(sessionID_in, rotation_entry, parameter_entry,current_path_
         sessionID = None
         savepath = None
 
-    return recording_settings.rotation_output, paramDict, sessionID,savepath, recording_settings.mediaPipeOverlay
+    return recording_settings.rotation_output, recording_settings.exposure_output, paramDict, sessionID,savepath, recording_settings.mediaPipeOverlay
 
 
 def RunProceedtoRecordGUI(sessionID_in,current_path_to_save):
