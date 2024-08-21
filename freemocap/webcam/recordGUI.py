@@ -118,6 +118,8 @@ class SettingsGUI:
             recordingSettingsFrame.pack()
         rotLabelFrame = Frame(self.master)
         rotLabelFrame.pack()
+        exposureLabelFrame = Frame(self.master)
+        exposureLabelFrame.pack()
         resFrame = Frame(self.master)
         resFrame.pack()
         parametersFrame = Frame(self.master)
@@ -139,6 +141,7 @@ class SettingsGUI:
         ]
         # radVar = tk.IntVar() #Radio Button Variable
         self.rotation_list = []
+        self.exposure_list = []
         rotationRadioButton = {}
         # creates radio buttons for each cam and stores the chosen rotation degree in a list
         for cam, rotDegree in zip(self.cam_inputs, rotationValues):
@@ -150,6 +153,15 @@ class SettingsGUI:
                 rotationRadioButton[cam] = tk.Radiobutton(
                     rotLabelFrame, text=option, value=degree, variable=current_rotation
                 ).pack()
+
+        for cam in zip(self.cam_inputs):
+            current_exposure = tk.IntVar()
+            current_exposure.set(-6)
+            self.exposure_list.append(current_exposure)
+            tk.Label(rotLabelFrame, text="Choose exposure for Cam " + str(cam)).pack()
+            exposureSpinbox = tk.Spinbox(rotLabelFrame, from_=-20, to=20, increment=1, textvariable=current_exposure)
+            exposureSpinbox.pack()
+
 
         # ---Resolution Height and Resolution Width entry
         widthLabel = Label(resFrame, text="Resolution Width").pack(side="left")
