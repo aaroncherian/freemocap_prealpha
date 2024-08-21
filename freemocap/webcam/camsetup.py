@@ -17,18 +17,19 @@ class VideoSetup(threading.Thread):
     """
     Class to run and thread webcams for preview purposes
     """
-    def __init__(self, camID, parameterDictionary, rotNum):
+    def __init__(self, camID, parameterDictionary, rotNum, cam_exposure):
         self.camID = camID
         self.parameterDictionary = parameterDictionary
         self.rotNum = rotNum
+        self.cam_exposure = cam_exposure
         threading.Thread.__init__(self)
 
     def run(self):
         # print("Starting " + self.previewName)
-        self.record(self.parameterDictionary, self.rotNum)
+        self.record(self.parameterDictionary, self.rotNum, self.cam_exposure)
 
-    def record(self, parameterDictionary, rotNum):
-        exposure = parameterDictionary.get("exposure")
+    def record(self, parameterDictionary, rotNum, cam_exposure):
+        exposure = cam_exposure
         resWidth = parameterDictionary.get("resWidth")
         resHeight = parameterDictionary.get("resHeight")
         camWindowName = "Camera" + str(self.camID)+' Preview - Press ESC to exit Setup'
@@ -84,18 +85,20 @@ class MediaPipeVideoSetup(threading.Thread):
     """
     Class to run and thread webcams for preview purposes
     """
-    def __init__(self, camID, parameterDictionary, rotNum):
+    def __init__(self, camID, parameterDictionary, rotNum, cam_exposure):
         self.camID = camID
         self.parameterDictionary = parameterDictionary
         self.rotNum = rotNum
+        self.cam_exposure = cam_exposure
         threading.Thread.__init__(self)
 
     def run(self):
         # print("Starting " + self.previewName)
-        self.record(self.parameterDictionary, self.rotNum)
+        self.record(self.parameterDictionary, self.rotNum, self.cam_exposure)
 
-    def record(self, parameterDictionary, rotNum):
-        exposure = parameterDictionary.get("exposure")
+    def record(self, parameterDictionary, rotNum, cam_exposure):
+        # exposure = parameterDictionary.get("exposure")
+        exposure = cam_exposure
         resWidth = parameterDictionary.get("resWidth")
         resHeight = parameterDictionary.get("resHeight")
         camWindowName = "Camera" + str(self.camID)+' - Press ESC to exit'
@@ -206,11 +209,12 @@ def RunSetup(cam_inputs, rotation_input, paramDict,mediaPipeOverlay):
 
     ulist = []
 
+    cam_exposure = paramDict.get('exposure')
     for cam_input, cam_rotation in zip(cam_inputs, rotation_input):
         if mediaPipeOverlay == True:
-            u = MediaPipeVideoSetup(cam_input, paramDict, cam_rotation)
+            u = MediaPipeVideoSetup(cam_input, paramDict, cam_rotation, cam_exposure)
         else:
-            u = VideoSetup(cam_input, paramDict, cam_rotation)
+            u = VideoSetup(cam_input, paramDict, cam_rotation, cam_exposure)
         u.start()
         ulist.append(u)
 
