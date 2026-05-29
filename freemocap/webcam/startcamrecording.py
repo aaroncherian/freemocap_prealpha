@@ -5,47 +5,9 @@ import pickle
 import os
 import platform
 
-
-# OpenCV HighGUI windows are safest on macOS when all namedWindow/imshow/waitKey
-# calls happen on the main thread. Camera worker threads write frames here; the
-# main thread displays them from runcams.RecordCams().
-flag = False
-preview_lock = threading.Lock()
-preview_frames = {}
-
-
-def request_stop():
-    """Ask all camera recording threads to stop."""
-    global flag
-    flag = True
-
-
-def reset_recording_state():
-    """Reset shared state before starting a new recording."""
-    global flag
-    flag = False
-    with preview_lock:
-        preview_frames.clear()
-
-
-def get_preview_frames():
-    """Return a copy of the latest preview frames for main-thread display."""
-    with preview_lock:
-        return {
-            cam_id: frame.copy()
-            for cam_id, frame in preview_frames.items()
-            if frame is not None
-        }
-
-
-def _store_preview_frame(cam_id, frame):
-    with preview_lock:
-        preview_frames[cam_id] = frame.copy()
-
-
 class CamRecordingThread(threading.Thread):
     def __init__(
-        self, session, camID, unix_camID, camInput, videoName, rawVidPath, beginTime, parameterDictionary, exposure_setting
+        self, session, camID, unix_camID, camInput, videoName, rawVidPath, beginTime, parameterDictionary, exposure_setting, stop_event=None
     ):
         threading.Thread.__init__(self)
         self.camID = camID
@@ -57,6 +19,9 @@ class CamRecordingThread(threading.Thread):
         self.parameterDictionary = parameterDictionary
         self.session = session
         self.exposure = exposure_setting
+        self.stop_event = stop_event if stop_event is not None else threading.Event()
+        self.latest_frame = None
+        self.window_name = "RECORDING - " + str(camID) + ' - Press ESC to exit'
         self.timeStamps = ([], [])
 
     def run(self):
@@ -70,102 +35,92 @@ class CamRecordingThread(threading.Thread):
             self.rawVidPath,
             self.beginTime,
             self.parameterDictionary,
-            self.exposure
+            self.exposure,
+            self,
         )
 
     def getStamps(self):
         return self.timeStamps
 
 
-def _open_capture(camInput):
+# the recording function that each threaded camera object runs (NO GUI here;
+# macOS requires all OpenCV window calls on the main thread - see RecordCams)
+def CamRecording(
+    session, camID, unix_camID, camInput, videoName, rawVidPath, beginTime, parameterDictionary, exposure, thread_handle=None
+):
+    """
+    Capture + write loop for one camera, run in a worker thread. Stores each
+    frame on thread_handle.latest_frame for the main thread to preview, and
+    stops when thread_handle.stop_event is set (ESC in any preview window).
+    Saves a video to RawVideos and pickles the per-frame timestamps.
+    """
+    stop_event = thread_handle.stop_event if thread_handle is not None else None
+
     if platform.system() == 'Windows':
-        return cv2.VideoCapture(camInput, cv2.CAP_DSHOW)
-    if platform.system() == 'Darwin':
-        return cv2.VideoCapture(camInput, cv2.CAP_AVFOUNDATION)
-    return cv2.VideoCapture(camInput, cv2.CAP_ANY)
+        cam = cv2.VideoCapture(camInput, cv2.CAP_DSHOW)
+    else:
+        cam = cv2.VideoCapture(camInput, cv2.CAP_ANY)
 
-
-def _configure_capture(cam, parameterDictionary, exposure):
     resWidth = parameterDictionary.get("resWidth")
     resHeight = parameterDictionary.get("resHeight")
     framerate = parameterDictionary.get("framerate")
+    codec = parameterDictionary.get("codec")
 
     cam.set(cv2.CAP_PROP_FRAME_WIDTH, resWidth)
     cam.set(cv2.CAP_PROP_FRAME_HEIGHT, resHeight)
-    if framerate is not None:
-        cam.set(cv2.CAP_PROP_FPS, framerate)
-
-    # These settings are useful for some Windows/DirectShow webcams, but on macOS
-    # AVFoundation does not reliably support them through OpenCV and they can
-    # cause empty frames or camera-open instability.
-    if platform.system() != 'Darwin':
+    if platform.system() == 'Windows':
+        # AVFoundation rejects FOURCC and uses a different exposure scale;
+        # only apply these on Windows.
         cam.set(cv2.CAP_PROP_EXPOSURE, exposure)
         cam.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
-
-    actual_width = int(cam.get(cv2.CAP_PROP_FRAME_WIDTH))
-    actual_height = int(cam.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    actual_fps = cam.get(cv2.CAP_PROP_FPS)
-    print(f"Camera actual mode: {actual_width}x{actual_height} @ {actual_fps:.1f} fps")
-    return resWidth, resHeight, framerate
-
-
-def _dump_timestamps(session, camID, unix_camID, timeStamps, timeStamps_unix):
-    with open(session.rawVidPath / camID, "wb") as f:
-        pickle.dump(timeStamps, f)
-    with open(session.rawVidPath / unix_camID, "wb") as g:
-        pickle.dump(timeStamps_unix, g)
-
-
-# the recording function that each threaded camera object runs
-def CamRecording(
-    session, camID, unix_camID, camInput, videoName, rawVidPath, beginTime, parameterDictionary, exposure
-):
-    """
-    Runs the recording process for one camera thread. Saves a video to the RawVideos folder
-    and per-frame timestamps to pickle files.
-
-    Important macOS compatibility note: this worker thread does not call cv2.namedWindow,
-    cv2.imshow, cv2.waitKey, or cv2.destroyWindow. The main thread owns all preview windows.
-    """
-    cam = _open_capture(camInput)
-
-    resWidth, resHeight, framerate = _configure_capture(cam, parameterDictionary, exposure)
-    codec = parameterDictionary.get("codec")
     fourcc = cv2.VideoWriter_fourcc(*codec)
+
+    width = cam.get(cv2.CAP_PROP_FRAME_WIDTH)
+    height = cam.get(cv2.CAP_PROP_FRAME_HEIGHT)
+    print("width:", width, "height:", height)
     saveRawVidPath = str(rawVidPath / videoName)
 
-    out = cv2.VideoWriter(saveRawVidPath, fourcc, framerate, (resWidth, resHeight))
-    if not out.isOpened():
-        print(f"WARNING: VideoWriter failed to open for {saveRawVidPath}")
-
     timeStamps = []
-    timeStamps_unix = [beginTime]
+    timeStamps_unix = []
+    timeStamps_unix.append(beginTime)  # first unix timestamp is always the begin time
 
-    try:
-        success = cam.isOpened()
-        if not success:
-            print(f"Camera {camID} failed to open at input {camInput}")
+    def _dump_timestamps():
+        with open(session.rawVidPath/camID, "wb") as f:
+            pickle.dump(timeStamps, f)
+        with open(session.rawVidPath/unix_camID, "wb") as g:
+            pickle.dump(timeStamps_unix, g)
 
-        while success:
-            if flag:
-                break
+    if not cam.isOpened():
+        print("Could not open camera at input " + str(camInput))
+        _dump_timestamps()
+        return timeStamps, timeStamps_unix
 
-            success, frame = cam.read()
-            if not success or frame is None:
-                break
+    # The VideoWriter is created lazily from the first real frame so its size
+    # matches what the camera actually delivers (on macOS the camera may ignore
+    # the requested resolution; a mismatched writer silently produces an
+    # unreadable video).
+    out = None
 
-            _store_preview_frame(camID, frame)
+    while stop_event is None or not stop_event.is_set():
+        success, frame = cam.read()
+        if not success or frame is None:
+            # macOS warmup / transient empty read - keep going until stopped
+            continue
 
-            frame_sized = cv2.resize(frame, (resWidth, resHeight))
-            out.write(frame_sized)
-            timeStamps.append(time.time() - beginTime)
-            timeStamps_unix.append(time.time())
+        if out is None:
+            frame_h, frame_w = frame.shape[0], frame.shape[1]
+            out = cv2.VideoWriter(saveRawVidPath, fourcc, framerate, (frame_w, frame_h))
 
-    finally:
-        _dump_timestamps(session, camID, unix_camID, timeStamps, timeStamps_unix)
-        cam.release()
+        out.write(frame)
+        timeStamps.append(time.time() - beginTime)
+        timeStamps_unix.append(time.time())
+        if thread_handle is not None:
+            thread_handle.latest_frame = frame
+
+    _dump_timestamps()
+    cam.release()
+    if out is not None:
         out.release()
-
     return timeStamps, timeStamps_unix
 
 

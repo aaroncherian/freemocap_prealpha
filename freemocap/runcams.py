@@ -1,11 +1,13 @@
 from freemocap.webcam import startcamrecording, timesync, videotrim
 
+import threading
+import cv2
+
 from pathlib import Path
 import time
 import pickle
 import pandas as pd
 import numpy as np
-import cv2
 from tkinter import Tk
 
 
@@ -38,9 +40,7 @@ def RecordCams(session,camInputs,parameterDictionary,rotationInputs, exposure_se
         vidNames.append(singleVidName)
 
     #%% Starting the thread recordings for each camera
-    # Worker threads only capture/write frames. The main thread owns OpenCV
-    # preview windows so macOS does not crash in cv2.namedWindow/imshow/waitKey.
-    startcamrecording.reset_recording_state()
+    stop_event = threading.Event()
     threads = []
     for n in numCamRange:  # starts recording video, opens threads for each camera
         camRecordings = startcamrecording.CamRecordingThread(
@@ -52,24 +52,28 @@ def RecordCams(session,camInputs,parameterDictionary,rotationInputs, exposure_se
             session.rawVidPath,
             beginTime,
             parameterDictionary,
-            exposure_settings[n]
+            exposure_settings[n],
+            stop_event
         )
         camRecordings.start()
+
         threads.append(camRecordings)
 
+    # Preview windows run on the MAIN thread (required on macOS). Pressing ESC
+    # in any window sets stop_event, which stops every camera at once.
     try:
-        while any(camRecordings.is_alive() for camRecordings in threads):
-            preview_frames = startcamrecording.get_preview_frames()
-            for camID, frame in preview_frames.items():
-                cv2.imshow(f"RECORDING - {camID} - Press ESC to exit", frame)
-
-            key = cv2.waitKey(20)
-            if key == 27:  # ESC: ask all camera threads to stop
-                startcamrecording.request_stop()
+        while any(t.is_alive() for t in threads):
+            for t in threads:
+                frame = t.latest_frame
+                if frame is not None:
+                    cv2.imshow(t.window_name, frame)
+            if (cv2.waitKey(1) & 0xFF) == 27:
+                stop_event.set()
                 break
     finally:
+        stop_event.set()
         for camRecordings in threads:
-            camRecordings.join()  # ensure timestamp files are dumped before continuing
+            camRecordings.join()  # let each thread dump its timestamp pickle before we read them
         cv2.destroyAllWindows()
 
     print("finished recordings")
@@ -155,4 +159,3 @@ def SyncCams(session, timeStampData,numCamRange,vidNames,camIDs):
         session.session_settings['recording_parameters'].update({'numFrames':session.numFrames})
         #videotrim.createCalibrationVideos(session,60,parameterDictionary)
         print('all done')
-
