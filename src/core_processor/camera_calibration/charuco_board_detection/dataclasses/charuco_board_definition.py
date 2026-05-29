@@ -7,14 +7,14 @@ import numpy as np
 
 @dataclass
 class CharucoBoard:
-    _aruco_marker_dict: Dict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_250)
+    _aruco_marker_dict: Dict = cv2.aruco.Dictionary(cv2.aruco.DICT_4X4_250)
     _number_of_squares_width: int = 7
     _number_of_squares_height: int = 5
     _black_square_side_length: int = 1
     _aruco_marker_length_proportional: float = .8
 
     def __post_init__(self):
-        self._charuco_board = cv2.aruco.CharucoBoard_create(self._number_of_squares_width,
+        self._charuco_board = cv2.aruco.CharucoBoard(self._number_of_squares_width,
                                                             self._number_of_squares_height,
                                                             self._black_square_side_length,
                                                             self._aruco_marker_length_proportional,
