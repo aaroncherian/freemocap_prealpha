@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import Tk, Label, Button, Frame, Listbox, Entry, filedialog
 from pathlib import Path
 
-from numpy.lib.npyio import save
+from numpy import save
 
 class setDataPathGUI:
     def __init__(self, master,session):
