@@ -75,8 +75,13 @@ def CamRecording(
 
     cam.set(cv2.CAP_PROP_FRAME_WIDTH, resWidth)
     cam.set(cv2.CAP_PROP_FRAME_HEIGHT, resHeight)
-    cam.set(cv2.CAP_PROP_EXPOSURE, exposure)
-    cam.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')) 
+    if platform.system() == 'Windows':
+        # AVFoundation (macOS) does not implement FOURCC setting through OpenCV
+        # (the call returns False and can leave the capture delivering empty
+        # frames), and CAP_PROP_EXPOSURE uses a different scale than the
+        # DSHOW -6 convention. Only apply these on Windows.
+        cam.set(cv2.CAP_PROP_EXPOSURE, exposure)
+        cam.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
     fourcc = cv2.VideoWriter_fourcc(*codec)
     # rawPath = filepath/'RawVideos' #creating a RawVideos folder
     # rawPath.mkdir(parents = True, exist_ok = True)
@@ -105,10 +110,20 @@ def CamRecording(
             break
         success, frame = cam.read()
 
-        
+        if not success or frame is None:
+            # On macOS/AVFoundation the first reads after opening can come back
+            # empty during warmup. Skip this iteration instead of crashing on
+            # cv2.imshow/cv2.resize with a None frame.
+            if cv2.waitKey(20) == 27:
+                flag = True
+                with open(session.rawVidPath/camID, "wb") as f:
+                    pickle.dump(timeStamps, f)
+                with open(session.rawVidPath/unix_camID, "wb") as g:
+                    pickle.dump(timeStamps_unix, g)
+                break
+            continue
+
         cv2.imshow(camWindowName, frame)
-        frame_sized = cv2.resize(frame, (resWidth, resHeight))
-        frame_sized = frame
         out.write(frame)
         timeStamps.append(time.time() - beginTime)  # add each timestamp to the list
         timeStamps_unix.append(time.time())

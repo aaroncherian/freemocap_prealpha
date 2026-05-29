@@ -43,8 +43,11 @@ class VideoSetup(threading.Thread):
 
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, resWidth)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, resHeight)
-        cap.set(cv2.CAP_PROP_EXPOSURE, exposure)
-        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')) 
+        if platform.system() == 'Windows':
+            # See startcamrecording.py: AVFoundation rejects FOURCC and uses a
+            # different exposure scale, so only apply these on Windows.
+            cap.set(cv2.CAP_PROP_EXPOSURE, exposure)
+            cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
 
         # showing values of the properties
         print("__________________________________________")
@@ -117,8 +120,11 @@ class MediaPipeVideoSetup(threading.Thread):
 
             cap.set(cv2.CAP_PROP_FRAME_WIDTH, resWidth)
             cap.set(cv2.CAP_PROP_FRAME_HEIGHT, resHeight)
-            cap.set(cv2.CAP_PROP_EXPOSURE, exposure)
-            cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')) 
+            if platform.system() == 'Windows':
+                # AVFoundation rejects FOURCC and uses a different exposure
+                # scale; only apply these on Windows.
+                cap.set(cv2.CAP_PROP_EXPOSURE, exposure)
+                cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
 
                 # showing values of the properties
             print("__________________________________________")

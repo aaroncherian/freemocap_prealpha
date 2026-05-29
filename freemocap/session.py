@@ -74,7 +74,7 @@ class Session: #self like "recording self"
         self.rawVidPath = self.sessionPath/'RawVideos'
         pathList.append(self.rawVidPath)
 
-        self.syncedVidPath = self.sessionPath/'SyncedVideos'
+        self.syncedVidPath = self.sessionPath/'synchronized_videos'
         pathList.append(self.syncedVidPath)
 
         self.calVidPath = self.sessionPath/'CalVideos'

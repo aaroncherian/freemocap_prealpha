@@ -169,213 +169,213 @@ def RunMe(sessionID=None,
     else:
         print('Skipping Video Syncing')
 
-    # %% Stage Three
-    if stage <= 3:
-        thisStage=3
-        console.rule(style="color({})".format(thisStage))
-        console.rule('Starting Capture Volume Calibration'.upper(),style="color({})".format(thisStage))
-        console.rule(style="color({})".format(thisStage))
-        console.print(Padding('Using Anipose to calculate 6 degree-of-freedom position (and distortion coeffs) of each camera based on detected charuco boards. This information is used to create a Camera Projection Matrix for each camera, which is later used in the 3d reconstruction stage', (1,4)), overflow="fold", justify='center',style="color({})".format(thisStage))
-        console.rule('See https://anipose.org for details', style="color({})".format(thisStage))
-        console.rule(style="color({})".format(thisStage))
+    # # %% Stage Three
+    # if stage <= 3:
+    #     thisStage=3
+    #     console.rule(style="color({})".format(thisStage))
+    #     console.rule('Starting Capture Volume Calibration'.upper(),style="color({})".format(thisStage))
+    #     console.rule(style="color({})".format(thisStage))
+    #     console.print(Padding('Using Anipose to calculate 6 degree-of-freedom position (and distortion coeffs) of each camera based on detected charuco boards. This information is used to create a Camera Projection Matrix for each camera, which is later used in the 3d reconstruction stage', (1,4)), overflow="fold", justify='center',style="color({})".format(thisStage))
+    #     console.rule('See https://anipose.org for details', style="color({})".format(thisStage))
+    #     console.rule(style="color({})".format(thisStage))
 
-        if sesh.numFrames is None:
-            a_sync_vid_path = list(sesh.syncedVidPath.glob('*.mp4'))
-            temp_cap =   cv2.VideoCapture(str(a_sync_vid_path[0]))
-            sesh.numFrames = temp_cap.get(cv2.CAP_PROP_FRAME_COUNT)
-            temp_cap.release()
+    #     if sesh.numFrames is None:
+    #         a_sync_vid_path = list(sesh.syncedVidPath.glob('*.mp4'))
+    #         temp_cap =   cv2.VideoCapture(str(a_sync_vid_path[0]))
+    #         sesh.numFrames = temp_cap.get(cv2.CAP_PROP_FRAME_COUNT)
+    #         temp_cap.release()
 
-        sesh.cgroup, sesh.mean_charuco_fr_mar_xyz = calibrate.CalibrateCaptureVolume(sesh,board, calVideoFrameLength)
+    #     sesh.cgroup, sesh.mean_charuco_fr_mar_xyz = calibrate.CalibrateCaptureVolume(sesh,board, calVideoFrameLength)
 
-        print('Anipose Calibration Successful!')
-    else:
-        print('Skipping Calibration')
+    #     print('Anipose Calibration Successful!')
+    # else:
+    #     print('Skipping Calibration')
 
-    # %% Stage Four
-    if stage <= 4:
-        thisStage=4
-        thisStageColor=12
-        console.rule(style="color({})".format(thisStageColor))
-        console.rule('Starting 2D Point Trackers'.upper(),style="color({})".format(thisStageColor))
-        stage4_msg ='This step implements various  computer vision that track the skeleton (and other objects) in the 2d videos, to produce the data that will be combined with the `camera projection matrices` from the calibration stage to produce the estimates of 3d movement. \n \n Each algorithm is different, but most involve using [bold magenta] convolutional neural networks [/bold magenta] trained from labeled videos to produce a 2d probability map of the likelihood that the tracked bodypart/object/feature (e.g. \'LeftElbow\') is in a given location. \n \n The peak of that distrubtion on each frame is recorded as the pixel-location of that item on that frame (e.g. \'LeftElbow(pixel-x, pixel-y, confidence\') where the a confidence value proportional to the underlying probability distribution (i.e. tall peaks in the probablitiy distribution indicate high confidence that the LeftElbow actually is at this pixel-x, pixel-y location) \n \nThis part is crazy future tech sci fi stuff. Seriously unbelievable this kind of thing is possible ✨'
-        console.print(Padding(stage4_msg, (1,4)), overflow="fold", justify='center',style="color({})".format(thisStageColor))
-        console.rule(style="color({})".format(thisStageColor))
+    # # %% Stage Four
+    # if stage <= 4:
+    #     thisStage=4
+    #     thisStageColor=12
+    #     console.rule(style="color({})".format(thisStageColor))
+    #     console.rule('Starting 2D Point Trackers'.upper(),style="color({})".format(thisStageColor))
+    #     stage4_msg ='This step implements various  computer vision that track the skeleton (and other objects) in the 2d videos, to produce the data that will be combined with the `camera projection matrices` from the calibration stage to produce the estimates of 3d movement. \n \n Each algorithm is different, but most involve using [bold magenta] convolutional neural networks [/bold magenta] trained from labeled videos to produce a 2d probability map of the likelihood that the tracked bodypart/object/feature (e.g. \'LeftElbow\') is in a given location. \n \n The peak of that distrubtion on each frame is recorded as the pixel-location of that item on that frame (e.g. \'LeftElbow(pixel-x, pixel-y, confidence\') where the a confidence value proportional to the underlying probability distribution (i.e. tall peaks in the probablitiy distribution indicate high confidence that the LeftElbow actually is at this pixel-x, pixel-y location) \n \nThis part is crazy future tech sci fi stuff. Seriously unbelievable this kind of thing is possible ✨'
+    #     console.print(Padding(stage4_msg, (1,4)), overflow="fold", justify='center',style="color({})".format(thisStageColor))
+    #     console.rule(style="color({})".format(thisStageColor))
 
 
-        if sesh.useMediaPipe:
+    #     if sesh.useMediaPipe:
 
-            console.rule(style="color({})".format(thisStage))    
-            console.rule('Running MediaPipe skeleton tracker - https://google.github.io/mediapipe', style="color({})".format(thisStage))    
-            console.rule(style="color({})".format(thisStage))    
+    #         console.rule(style="color({})".format(thisStage))    
+    #         console.rule('Running MediaPipe skeleton tracker - https://google.github.io/mediapipe', style="color({})".format(thisStage))    
+    #         console.rule(style="color({})".format(thisStage))    
 
-            if runMediaPipe:
-                fmc_mediapipe.runMediaPipe(sesh)
-                sesh.mediaPipeData_nCams_nFrames_nImgPts_XYC = fmc_mediapipe.parseMediaPipe(sesh)
+    #         if runMediaPipe:
+    #             fmc_mediapipe.runMediaPipe(sesh)
+    #             sesh.mediaPipeData_nCams_nFrames_nImgPts_XYC = fmc_mediapipe.parseMediaPipe(sesh)
 
-            else:
-                print('`runMediaPipe` set to False, so we\'re loading MediaPipe data from npy file')
-                sesh.mediaPipeData_nCams_nFrames_nImgPts_XYC = np.load(sesh.dataArrayPath/'mediaPipeData_2d.npy', allow_pickle=True)
+    #         else:
+    #             print('`runMediaPipe` set to False, so we\'re loading MediaPipe data from npy file')
+    #             sesh.mediaPipeData_nCams_nFrames_nImgPts_XYC = np.load(sesh.dataArrayPath/'mediaPipeData_2d.npy', allow_pickle=True)
             
-            if save_annotated_videos:
-                fmc_mediapipe_annotation.annotate_session_videos_with_mediapipe(sesh)
+    #         if save_annotated_videos:
+    #             fmc_mediapipe_annotation.annotate_session_videos_with_mediapipe(sesh)
 
 
-            sesh.mediaPipeSkel_fr_mar_xyz, sesh.mediaPipeSkel_reprojErr = reconstruct3D.reconstruct3D(sesh,sesh.mediaPipeData_nCams_nFrames_nImgPts_XYC, confidenceThreshold=reconstructionConfidenceThreshold)
+    #         sesh.mediaPipeSkel_fr_mar_xyz, sesh.mediaPipeSkel_reprojErr = reconstruct3D.reconstruct3D(sesh,sesh.mediaPipeData_nCams_nFrames_nImgPts_XYC, confidenceThreshold=reconstructionConfidenceThreshold)
             
-            if bundle_adjust_3d_points:
-                sesh.mediaPipeSkel_fr_mar_xyz_og = sesh.mediaPipeSkel_fr_mar_xyz.copy()
-                np.save(sesh.dataArrayPath/'mediaPipeSkel_3d_raw.npy', sesh.mediaPipeSkel_fr_mar_xyz_og) #save data to npy
+    #         if bundle_adjust_3d_points:
+    #             sesh.mediaPipeSkel_fr_mar_xyz_og = sesh.mediaPipeSkel_fr_mar_xyz.copy()
+    #             np.save(sesh.dataArrayPath/'mediaPipeSkel_3d_raw.npy', sesh.mediaPipeSkel_fr_mar_xyz_og) #save data to npy
 
-                from mediapipe.python.solutions import holistic as mp_holistic
-                mediapipe_body_pose_connections = [this_connection for this_connection in mp_holistic.POSE_CONNECTIONS]
-                with console.status('Running bundle adjustment optimization on 3d points...'):
-                    sesh.mediaPipeSkel_fr_mar_xyz = sesh.cgroup.optim_points(sesh.mediaPipeData_nCams_nFrames_nImgPts_XYC[:,:,:,:2],
-                                                                            sesh.mediaPipeSkel_fr_mar_xyz, 
-                                                                            constraints=mediapipe_body_pose_connections,
-                                                                            verbose=True)
-                print('Done adjusting bundles!')
-
-
-
-            np.save(sesh.dataArrayPath/'mediaPipeSkel_3d.npy', sesh.mediaPipeSkel_fr_mar_xyz) #save data to npy
-            np.save(sesh.dataArrayPath/'mediaPipeSkel_reprojErr.npy', sesh.mediaPipeSkel_reprojErr) #save data to npy
-
-            #smoooooooooth, just a bit
-            smoothWinLength = 5
-            smoothOrder = 3
-            for dim in range(sesh.mediaPipeSkel_fr_mar_xyz.shape[2]):
-                for mm in range(sesh.mediaPipeSkel_fr_mar_xyz.shape[1]):
-                    sesh.mediaPipeSkel_fr_mar_xyz[:,mm,dim] = savgol_filter(sesh.mediaPipeSkel_fr_mar_xyz[:,mm,dim], smoothWinLength, smoothOrder)
-
-
-            if place_skeleton_on_origin:
-                sesh.mediaPipeSkel_fr_mar_xyz_smoothed_unrotated = sesh.mediaPipeSkel_fr_mar_xyz.copy()
-                np.save(sesh.dataArrayPath/'mediaPipeSkel_3d_smoothed_unrotated.npy', sesh.mediaPipeSkel_fr_mar_xyz_smoothed_unrotated) #save data to npy
-                good_frame = fmc_good_frame_finder.find_good_frame(sesh.mediaPipeSkel_fr_mar_xyz, .6, debug = False) #.6 is an initial guess for the velocity. seems to be a safe bet for for all the cases I've tried
-
-                mediapipe_indices = fmc_mediapipe.mediapipe_indices
-
-                origin_aligned_skeleton_data_XYZ = fmc_origin_alignment.align_skeleton_with_origin(sesh.mediaPipeSkel_fr_mar_xyz, mediapipe_indices, good_frame, debug = False)
-                np.save(sesh.dataArrayPath/'mediaPipeSkel_3d_smoothed.npy', origin_aligned_skeleton_data_XYZ) #save data to npy
-
-            else:
-                np.save(sesh.dataArrayPath/'mediaPipeSkel_3d_smoothed.npy', sesh.mediaPipeSkel_fr_mar_xyz)
+    #             from mediapipe.python.solutions import holistic as mp_holistic
+    #             mediapipe_body_pose_connections = [this_connection for this_connection in mp_holistic.POSE_CONNECTIONS]
+    #             with console.status('Running bundle adjustment optimization on 3d points...'):
+    #                 sesh.mediaPipeSkel_fr_mar_xyz = sesh.cgroup.optim_points(sesh.mediaPipeData_nCams_nFrames_nImgPts_XYC[:,:,:,:2],
+    #                                                                         sesh.mediaPipeSkel_fr_mar_xyz, 
+    #                                                                         constraints=mediapipe_body_pose_connections,
+    #                                                                         verbose=True)
+    #             print('Done adjusting bundles!')
 
 
 
+    #         np.save(sesh.dataArrayPath/'mediaPipeSkel_3d.npy', sesh.mediaPipeSkel_fr_mar_xyz) #save data to npy
+    #         np.save(sesh.dataArrayPath/'mediaPipeSkel_reprojErr.npy', sesh.mediaPipeSkel_reprojErr) #save data to npy
 
-        sesh.save_session()
-
-
-        if sesh.useOpenPose:
-            console.rule(style="color({})".format(thisStage))
-            console.rule('Running OpenPose skeleton tracker - https://github.com/CMU-Perceptual-Computing-Lab/openpose', style="color({})".format(thisStage))
-            console.rule(style="color({})".format(thisStage))
-
-
-            fmc_openpose.runOpenPose(sesh, runOpenPose=runOpenPose)
-            sesh.openPoseData_nCams_nFrames_nImgPts_XYC = fmc_openpose.parseOpenPose(sesh)
-            sesh.openPoseSkel_fr_mar_xyz, sesh.openPoseSkel_reprojErr = reconstruct3D.reconstruct3D(sesh,sesh.openPoseData_nCams_nFrames_nImgPts_XYC, confidenceThreshold=reconstructionConfidenceThreshold)
-            np.save(sesh.dataArrayPath/'openPoseSkel_3d.npy', sesh.openPoseSkel_fr_mar_xyz) #save data to npy
-            np.save(sesh.dataArrayPath/'openPoseSkel_reprojErr.npy', sesh.openPoseSkel_reprojErr) #save data to npy
-
-            smoothWinLength = 5
-            smoothOrder = 3
-            for dim in range(sesh.openPoseSkel_fr_mar_xyz.shape[2]):
-                for mm in range(sesh.openPoseSkel_fr_mar_xyz.shape[1]):
-                    sesh.openPoseSkel_fr_mar_xyz[:,mm,dim] = savgol_filter(sesh.openPoseSkel_fr_mar_xyz[:,mm,dim], smoothWinLength, smoothOrder)
-
-            np.save(sesh.dataArrayPath/'openPoseSkel_3d_smoothed.npy', sesh.openPoseSkel_fr_mar_xyz) #save data to npy
-
-        sesh.save_session()
-        sesh.syncedVidList = []
-
-        if sesh.useDLC:
-
-            console.rule(style="color({})".format(thisStage))
-            console.rule('Running DeepLabCut :mouse: - https://deeplabcut.org', style="color({})".format(thisStage))
-            console.rule(style="color({})".format(thisStage))
+    #         #smoooooooooth, just a bit
+    #         smoothWinLength = 5
+    #         smoothOrder = 3
+    #         for dim in range(sesh.mediaPipeSkel_fr_mar_xyz.shape[2]):
+    #             for mm in range(sesh.mediaPipeSkel_fr_mar_xyz.shape[1]):
+    #                 sesh.mediaPipeSkel_fr_mar_xyz[:,mm,dim] = savgol_filter(sesh.mediaPipeSkel_fr_mar_xyz[:,mm,dim], smoothWinLength, smoothOrder)
 
 
-            for vid in sesh.syncedVidPath.glob('*.mp4'):
-                sesh.syncedVidList.append(str(vid))
+    #         if place_skeleton_on_origin:
+    #             sesh.mediaPipeSkel_fr_mar_xyz_smoothed_unrotated = sesh.mediaPipeSkel_fr_mar_xyz.copy()
+    #             np.save(sesh.dataArrayPath/'mediaPipeSkel_3d_smoothed_unrotated.npy', sesh.mediaPipeSkel_fr_mar_xyz_smoothed_unrotated) #save data to npy
+    #             good_frame = fmc_good_frame_finder.find_good_frame(sesh.mediaPipeSkel_fr_mar_xyz, .6, debug = False) #.6 is an initial guess for the velocity. seems to be a safe bet for for all the cases I've tried
 
-            for config_path in dlc_config_paths:
-                dlc.analyze_videos(config_path,sesh.syncedVidList, destfolder= sesh.dlcDataPath, save_as_csv=True)
-                sesh.dlcData_nCams_nFrames_nImgPts_XYC = fmc_deeplabcut.parseDeepLabCut(sesh, config_path)
-                sesh.dlc_fr_mar_xyz, sesh.dlc_reprojErr = reconstruct3D.reconstruct3D(sesh,sesh.dlcData_nCams_nFrames_nImgPts_XYC, confidenceThreshold=reconstructionConfidenceThreshold)
-                np.save(sesh.dataArrayPath/'deepLabCut_3d.npy', sesh.dlc_fr_mar_xyz) #save data to npy
-                np.save(sesh.dataArrayPath/'deepLabCut_reprojErr.npy', sesh.dlc_reprojErr) #save data to npy
-        sesh.save_session()
-    else:
+    #             mediapipe_indices = fmc_mediapipe.mediapipe_indices
 
-        print('Skipping 2d point tracking')
+    #             origin_aligned_skeleton_data_XYZ = fmc_origin_alignment.align_skeleton_with_origin(sesh.mediaPipeSkel_fr_mar_xyz, mediapipe_indices, good_frame, debug = False)
+    #             np.save(sesh.dataArrayPath/'mediaPipeSkel_3d_smoothed.npy', origin_aligned_skeleton_data_XYZ) #save data to npy
 
-
-    # %% Stage 5 - Use Blender to create output data files
-    if stage <=5:
+    #         else:
+    #             np.save(sesh.dataArrayPath/'mediaPipeSkel_3d_smoothed.npy', sesh.mediaPipeSkel_fr_mar_xyz)
 
 
-        try:
-            if useBlender == True:
-                thisStage=5
-                console.rule(style="color({})".format(thisStage))
-                console.rule('Exporting Files...'.upper(), style="color({})".format(thisStage))
-                console.rule('Hijacking Blender\'s file format converters to export FreeMoCap data as various file format (.blend, .usd, .gltf, .fbx)', style="color({})".format(thisStage))
-                console.rule(style="color({})".format(thisStage))
 
-                path_to_this_py_file = Path(__file__).parent.resolve()
-                fmc_blender_script_path = path_to_this_py_file /'freemocap_blender_megascript.py'
+
+    #     sesh.save_session()
+
+
+    #     if sesh.useOpenPose:
+    #         console.rule(style="color({})".format(thisStage))
+    #         console.rule('Running OpenPose skeleton tracker - https://github.com/CMU-Perceptual-Computing-Lab/openpose', style="color({})".format(thisStage))
+    #         console.rule(style="color({})".format(thisStage))
+
+
+    #         fmc_openpose.runOpenPose(sesh, runOpenPose=runOpenPose)
+    #         sesh.openPoseData_nCams_nFrames_nImgPts_XYC = fmc_openpose.parseOpenPose(sesh)
+    #         sesh.openPoseSkel_fr_mar_xyz, sesh.openPoseSkel_reprojErr = reconstruct3D.reconstruct3D(sesh,sesh.openPoseData_nCams_nFrames_nImgPts_XYC, confidenceThreshold=reconstructionConfidenceThreshold)
+    #         np.save(sesh.dataArrayPath/'openPoseSkel_3d.npy', sesh.openPoseSkel_fr_mar_xyz) #save data to npy
+    #         np.save(sesh.dataArrayPath/'openPoseSkel_reprojErr.npy', sesh.openPoseSkel_reprojErr) #save data to npy
+
+    #         smoothWinLength = 5
+    #         smoothOrder = 3
+    #         for dim in range(sesh.openPoseSkel_fr_mar_xyz.shape[2]):
+    #             for mm in range(sesh.openPoseSkel_fr_mar_xyz.shape[1]):
+    #                 sesh.openPoseSkel_fr_mar_xyz[:,mm,dim] = savgol_filter(sesh.openPoseSkel_fr_mar_xyz[:,mm,dim], smoothWinLength, smoothOrder)
+
+    #         np.save(sesh.dataArrayPath/'openPoseSkel_3d_smoothed.npy', sesh.openPoseSkel_fr_mar_xyz) #save data to npy
+
+    #     sesh.save_session()
+    #     sesh.syncedVidList = []
+
+    #     if sesh.useDLC:
+
+    #         console.rule(style="color({})".format(thisStage))
+    #         console.rule('Running DeepLabCut :mouse: - https://deeplabcut.org', style="color({})".format(thisStage))
+    #         console.rule(style="color({})".format(thisStage))
+
+
+    #         for vid in sesh.syncedVidPath.glob('*.mp4'):
+    #             sesh.syncedVidList.append(str(vid))
+
+    #         for config_path in dlc_config_paths:
+    #             dlc.analyze_videos(config_path,sesh.syncedVidList, destfolder= sesh.dlcDataPath, save_as_csv=True)
+    #             sesh.dlcData_nCams_nFrames_nImgPts_XYC = fmc_deeplabcut.parseDeepLabCut(sesh, config_path)
+    #             sesh.dlc_fr_mar_xyz, sesh.dlc_reprojErr = reconstruct3D.reconstruct3D(sesh,sesh.dlcData_nCams_nFrames_nImgPts_XYC, confidenceThreshold=reconstructionConfidenceThreshold)
+    #             np.save(sesh.dataArrayPath/'deepLabCut_3d.npy', sesh.dlc_fr_mar_xyz) #save data to npy
+    #             np.save(sesh.dataArrayPath/'deepLabCut_reprojErr.npy', sesh.dlc_reprojErr) #save data to npy
+    #     sesh.save_session()
+    # else:
+
+    #     print('Skipping 2d point tracking')
+
+
+    # # %% Stage 5 - Use Blender to create output data files
+    # if stage <=5:
+
+
+    #     try:
+    #         if useBlender == True:
+    #             thisStage=5
+    #             console.rule(style="color({})".format(thisStage))
+    #             console.rule('Exporting Files...'.upper(), style="color({})".format(thisStage))
+    #             console.rule('Hijacking Blender\'s file format converters to export FreeMoCap data as various file format (.blend, .usd, .gltf, .fbx)', style="color({})".format(thisStage))
+    #             console.rule(style="color({})".format(thisStage))
+
+    #             path_to_this_py_file = Path(__file__).parent.resolve()
+    #             fmc_blender_script_path = path_to_this_py_file /'freemocap_blender_megascript.py'
  
-                command_str = str(blenderPath) + " --background" + " --python " +  str(fmc_blender_script_path) +  " -- " +  str(sesh.sessionPath) +' ' + str(good_clean_frame_number)
-                # command_str = [str(blenderPath), "--background", "--python", str(fmc_blender_script_path), "--", str(sesh.sessionPath)]
-                blender_process = subprocess.Popen(
-                                        command_str,
-                                        shell=False,
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE
-                                        )
-                while True:
-                    output = blender_process.stdout.readline()
-                    if blender_process.poll() is not None:
-                        break
-                    if output:
-                        print(output.strip().decode())
+    #             command_str = str(blenderPath) + " --background" + " --python " +  str(fmc_blender_script_path) +  " -- " +  str(sesh.sessionPath) +' ' + str(good_clean_frame_number)
+    #             # command_str = [str(blenderPath), "--background", "--python", str(fmc_blender_script_path), "--", str(sesh.sessionPath)]
+    #             blender_process = subprocess.Popen(
+    #                                     command_str,
+    #                                     shell=False,
+    #                                     stdout=subprocess.PIPE,
+    #                                     stderr=subprocess.PIPE
+    #                                     )
+    #             while True:
+    #                 output = blender_process.stdout.readline()
+    #                 if blender_process.poll() is not None:
+    #                     break
+    #                 if output:
+    #                     print(output.strip().decode())
                 
-                if blender_process.returncode == 0:
-                    print("Blender returned an error:")
-                    print(blender_process.stderr.read().decode())
+    #             if blender_process.returncode == 0:
+    #                 print("Blender returned an error:")
+    #                 print(blender_process.stderr.read().decode())
                   
 
 
-        except:
-            console.print_exception()
+    #     except:
+    #         console.print_exception()
 
 
-    # %% Stage 6 - Make  Animation
-    if stage <= 6:
-        thisStage=6
-        console.rule(style="color({})".format(thisStage))
-        console.rule('Creating the Skreleton animation!'.upper(),style="color({})".format(thisStage))
-        console.print('The video creation is very slow. All of the animation making code is crazy slow, tbh. Sorry about that, future iterations will be better lol :sweat_smile:',overflow="fold", justify='center',style="color({})".format(thisStage))
-        console.rule(style="color({})".format(thisStage))
+    # # %% Stage 6 - Make  Animation
+    # if stage <= 6:
+    #     thisStage=6
+    #     console.rule(style="color({})".format(thisStage))
+    #     console.rule('Creating the Skreleton animation!'.upper(),style="color({})".format(thisStage))
+    #     console.print('The video creation is very slow. All of the animation making code is crazy slow, tbh. Sorry about that, future iterations will be better lol :sweat_smile:',overflow="fold", justify='center',style="color({})".format(thisStage))
+    #     console.rule(style="color({})".format(thisStage))
 
 
 
-        play_skeleton_animation.PlaySkeletonAnimation(
-                                sesh,
-                                startFrame=sesh.startFrame,
-                                azimuth=-90,
-                                elevation=-81,
-                                useOpenPose=useOpenPose,
-                                useMediaPipe=useMediaPipe,
-                                useDLC=useDLC,
-                                recordVid = recordVid,
-                                showAnimation=showAnimation,
-                                )
-        console.rule(style="color({})".format(thisStage))
-    else:
-        print('Skipping Skeleton Plotting')
+    #     play_skeleton_animation.PlaySkeletonAnimation(
+    #                             sesh,
+    #                             startFrame=sesh.startFrame,
+    #                             azimuth=-90,
+    #                             elevation=-81,
+    #                             useOpenPose=useOpenPose,
+    #                             useMediaPipe=useMediaPipe,
+    #                             useDLC=useDLC,
+    #                             recordVid = recordVid,
+    #                             showAnimation=showAnimation,
+    #                             )
+    #     console.rule(style="color({})".format(thisStage))
+    # else:
+    #     print('Skipping Skeleton Plotting')
 
 
     console.rule(style="color({})".format(13))
