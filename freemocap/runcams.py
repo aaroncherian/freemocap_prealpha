@@ -5,6 +5,7 @@ import time
 import pickle
 import pandas as pd
 import numpy as np
+import cv2
 from tkinter import Tk
 
 
@@ -37,6 +38,9 @@ def RecordCams(session,camInputs,parameterDictionary,rotationInputs, exposure_se
         vidNames.append(singleVidName)
 
     #%% Starting the thread recordings for each camera
+    # Worker threads only capture/write frames. The main thread owns OpenCV
+    # preview windows so macOS does not crash in cv2.namedWindow/imshow/waitKey.
+    startcamrecording.reset_recording_state()
     threads = []
     for n in numCamRange:  # starts recording video, opens threads for each camera
         camRecordings = startcamrecording.CamRecordingThread(
@@ -51,11 +55,22 @@ def RecordCams(session,camInputs,parameterDictionary,rotationInputs, exposure_se
             exposure_settings[n]
         )
         camRecordings.start()
-
         threads.append(camRecordings)
 
-    for camRecordings in threads:
-        camRecordings.join()  # make sure that one thread ending doesn't immediately end all the others (before they can dump data in a pickle file)
+    try:
+        while any(camRecordings.is_alive() for camRecordings in threads):
+            preview_frames = startcamrecording.get_preview_frames()
+            for camID, frame in preview_frames.items():
+                cv2.imshow(f"RECORDING - {camID} - Press ESC to exit", frame)
+
+            key = cv2.waitKey(20)
+            if key == 27:  # ESC: ask all camera threads to stop
+                startcamrecording.request_stop()
+                break
+    finally:
+        for camRecordings in threads:
+            camRecordings.join()  # ensure timestamp files are dumped before continuing
+        cv2.destroyAllWindows()
 
     print("finished recordings")
 
